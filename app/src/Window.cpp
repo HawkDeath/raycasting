@@ -29,6 +29,16 @@ namespace ray
     void Window::create_surface(VkInstance instance, VkSurfaceKHR &surface)
     {
         VK_CHECK(glfwCreateWindowSurface(instance, window_handler, nullptr, &surface), "Failed to create surface");
+        LOG("Surface has been created");
     }
+
+    std::vector<const char*> Window::required_extensions() const
+    {
+        uint32_t extensions_count = 0u;
+        const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&extensions_count);
+        std::vector<const char*> extensions(glfw_extensions, glfw_extensions + extensions_count);
+        return extensions;
+    }
+
 
 }

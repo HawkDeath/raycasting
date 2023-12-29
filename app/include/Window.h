@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace ray
 {
@@ -24,6 +25,7 @@ namespace ray
         [[nodiscard]] VkExtent2D get_window_extent() const { return {width, height};}
 
         void create_surface(VkInstance instance, VkSurfaceKHR &surface);
+        std::vector<const char*> required_extensions() const;
 
     private:
         GLFWwindow *window_handler{};

@@ -6,6 +6,7 @@
 #define RAYCASTING_RAYCASTERDEMO_H
 
 #include "Window.h"
+#include "VulkanDevice.h"
 
 namespace ray
 {
@@ -19,6 +20,7 @@ namespace ray
 
     private:
         Window m_window {"raycaster-demo", 1920u, 1080u};
+        gfx::VulkanDevice m_vulkan_device{m_window};
     };
 }
 

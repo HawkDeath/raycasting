@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.25)
 
+
+set(GFX_HEADERS ./include/VulkanDevice.h)
+set(GFX_SOURCES ./src/VulkanDevice.cpp)
+
 set(APP_HEADERS
         ./include/RaycasterDemo.h
         ./include/Log.h
@@ -9,7 +13,7 @@ set(APP_SRC
         ./src/Window.cpp
         main.cpp)
 
-set(APP_CODE ${APP_HEADERS} ${APP_SRC})
+set(APP_CODE ${APP_HEADERS} ${APP_SRC} ${GFX_HEADERS} ${GFX_SOURCES})
 add_executable(raycasting ${APP_CODE})
 target_link_libraries(raycasting PRIVATE glfw glm Vulkan::Vulkan spdlog)
 target_include_directories(raycasting PRIVATE include)
