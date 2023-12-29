@@ -64,4 +64,4 @@ endif()
 
 add_subdirectory(deps/spdlog)
 
-add_subdirectory(src)
+add_subdirectory(app)
