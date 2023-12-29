@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.25)
 
 set(APP_HEADERS
+        ./include/RaycasterDemo.h
         ./include/Log.h
         ./include/Window.h )
 set(APP_SRC
+        ./src/RaycasterDemo.cpp
         ./src/Window.cpp
         main.cpp)
 

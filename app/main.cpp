@@ -1,14 +1,22 @@
+#include "RaycasterDemo.h"
+#include "Log.h"
+
 #include <memory>
 
-#include "Window.h"
+int main(int argc, char *argv[])
+{
+    UNUSE(argc);
+    UNUSE(argv);
 
-int main() {
-
-    auto window = std::make_unique<ray::Window>("raycasting", 1920, 1080);
-
-    while (window->is_running())
+    try
     {
-        glfwPollEvents();
+        auto ray_app = std::make_unique<ray::RaycasterDemo>();
+        ray_app->run();
+    }
+    catch (std::exception &e)
+    {
+        ELOG("[exception] {}", e.what());
+        return -1;
     }
 
     return 0;

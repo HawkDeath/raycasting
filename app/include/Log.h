@@ -14,5 +14,7 @@
 #define RT_THROW(msg) throw std::runtime_error(msg);
 #define VK_CHECK(x, msg) if ((x) != VK_SUCCESS) { RT_THROW(msg); }
 
+#define UNUSE(x) (void)x
+
 
 #endif //RAYCASTING_LOG_H
