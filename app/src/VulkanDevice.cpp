@@ -3,48 +3,13 @@
 //
 #include "VulkanDevice.h"
 #include "Log.h"
+
+#include "Buffer.h"
+
 #include <set>
 
 
 namespace gfx {
-
-    Queue Queue::find_type_of_queue(VkPhysicalDevice pd, QueueType type) {
-        uint32_t queue_family_count = 0u;
-        vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, nullptr);
-        std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, queue_families.data());
-        uint32_t idx = 0u;
-        for (const auto &queue: queue_families) {
-            if (queue.queueFlags & VK_QUEUE_GRAPHICS_BIT && type == QueueType::Graphics) {
-                Queue graphics_queue;
-                graphics_queue.type = QueueType::Graphics;
-                graphics_queue.index = idx;
-                return graphics_queue;
-            }
-            ++idx;
-        }
-        return Queue(); // invalid queue
-    }
-
-    Queue Queue::find_present_queue(VkPhysicalDevice pd, VkSurfaceKHR &surface) {
-        uint32_t queue_family_count = 0u;
-        vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, nullptr);
-        std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, queue_families.data());
-        uint32_t idx = 0u;
-        for (const auto &queue: queue_families) {
-            VkBool32 is_present_supported = VK_FALSE;
-            vkGetPhysicalDeviceSurfaceSupportKHR(pd, idx, surface, &is_present_supported);
-            if (is_present_supported) {
-                Queue present_queue;
-                present_queue.type = QueueType::Present;
-                present_queue.index = idx;
-                return present_queue;
-            }
-            ++idx;
-        }
-        return Queue(); // invalid queue
-    }
 
 
     VulkanDevice::VulkanDevice(ray::Window &_window) : m_window{_window} {
@@ -101,6 +66,8 @@ namespace gfx {
             m_physical_device = physical_devices[0];
 
         vkGetPhysicalDeviceProperties(m_physical_device, &m_device_properties);
+        vkGetPhysicalDeviceMemoryProperties(m_physical_device, &m_physical_device_memory_prop);
+
         LOG("Choosen: {}", m_device_properties.deviceName);
         LOG("Vulkan API version supported {}.{}.{}", VK_API_VERSION_MAJOR(m_device_properties.apiVersion),
             VK_API_VERSION_MINOR(m_device_properties.apiVersion), VK_API_VERSION_PATCH(m_device_properties.apiVersion));
@@ -113,7 +80,7 @@ namespace gfx {
         std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
 
         const float prio = 1.0f;
-        for (uint32_t qf : unique_queue_families) {
+        for (uint32_t qf: unique_queue_families) {
             VkDeviceQueueCreateInfo device_queue_create_info = {};
             device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             device_queue_create_info.pNext = VK_NULL_HANDLE;
@@ -139,21 +106,49 @@ namespace gfx {
 
         device_create_info.enabledLayerCount = 0u;
 
-        VK_CHECK(vkCreateDevice(m_physical_device, &device_create_info, nullptr, &m_device), "Failed to create physical device");
+        VK_CHECK(vkCreateDevice(m_physical_device, &device_create_info, nullptr, &m_device),
+                 "Failed to create physical device");
 
         vkGetDeviceQueue(m_device, m_graphcis_queue.index, 0u, &m_graphcis_queue.queue_handler);
         vkGetDeviceQueue(m_device, m_present_queue.index, 0u, &m_present_queue.queue_handler);
 
-        if (m_graphcis_queue.queue_handler == VK_NULL_HANDLE) RT_THROW("Invalid graphic queue");
-        if (m_present_queue.queue_handler == VK_NULL_HANDLE) RT_THROW("Invalid present queue");
+        if (m_graphcis_queue.queue_handler == VK_NULL_HANDLE) { RT_THROW("Invalid graphic queue"); };
+        if (m_present_queue.queue_handler == VK_NULL_HANDLE) { RT_THROW("Invalid present queue"); };
         LOG("Logical device has been created");
+
+        // command pool
+        VkCommandPoolCreateInfo command_pool_info = {};
+        command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        command_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        command_pool_info.queueFamilyIndex = m_graphcis_queue.index;
+
+        VK_CHECK(vkCreateCommandPool(m_device, &command_pool_info, nullptr, &m_graphics_command_pool),
+                 "Failed to create graphcis command pool");
+
     }
 
     VulkanDevice::~VulkanDevice() {
 
-
+        vkDestroyCommandPool(m_device, m_graphics_command_pool, nullptr);
         vkDestroyDevice(m_device, nullptr);
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
     }
+
+    std::shared_ptr<Buffer>
+    VulkanDevice::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags property) {
+        // TODO: add allocator class to manage memory
+        return std::make_shared<Buffer>(*this, size, usage, property);
+    }
+
+    uint32_t VulkanDevice::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags mem_prop) {
+        for (uint32_t i = 0u; i < m_physical_device_memory_prop.memoryTypeCount; i++) {
+            if ((type_filter & (1 << i)) &&
+                (m_physical_device_memory_prop.memoryTypes[i].propertyFlags & mem_prop) == mem_prop) {
+                return i;
+            }
+        }
+        RT_THROW("Failed to find requested memory type");
+    }
+
 }

@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 3.25)
 
 
-set(GFX_HEADERS ./include/VulkanDevice.h)
-set(GFX_SOURCES ./src/VulkanDevice.cpp)
+set(GFX_HEADERS
+        ./include/Buffer.h
+        ./include/Queue.h
+        ./include/VulkanDevice.h)
+set(GFX_SOURCES
+        ./src/Buffer.cpp
+        ./src/Queue.cpp
+        ./src/VulkanDevice.cpp)
 
 set(APP_HEADERS
         ./include/RaycasterDemo.h

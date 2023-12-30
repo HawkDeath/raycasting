@@ -11,7 +11,7 @@
 
 #define LOG(...) do { spdlog::info(__VA_ARGS__); } while(0)
 #define ELOG(...) do { spdlog::error(__VA_ARGS__); } while(0)
-#define RT_THROW(msg) throw std::runtime_error(msg);
+#define RT_THROW(msg) throw std::runtime_error(msg)
 #define VK_CHECK(x, msg) if ((x) != VK_SUCCESS) { RT_THROW(msg); }
 
 #define UNUSE(x) (void)x
