@@ -14,7 +14,7 @@
 namespace gfx {
 
     class Buffer;
-    
+
     class VulkanDevice {
     public:
         explicit VulkanDevice(ray::Window &_window);
@@ -23,6 +23,10 @@ namespace gfx {
 
         std::shared_ptr<Buffer>
         create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags property);
+
+        VkCommandBuffer begin_single_command_buffer();
+
+        void end_single_command_buffer(VkCommandBuffer command);
 
         VkDevice device_handler() const { return m_device; }
 
@@ -37,7 +41,7 @@ namespace gfx {
         Queue present_queue_handler() const { return m_present_queue; }
 
         uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags mem_prop);
-
+        ray::Window& window_handler() const { return m_window; }
     private:
         ray::Window &m_window;
         VkInstance m_instance;

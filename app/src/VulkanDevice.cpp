@@ -135,6 +135,38 @@ namespace gfx {
         vkDestroyInstance(m_instance, nullptr);
     }
 
+    VkCommandBuffer VulkanDevice::begin_single_command_buffer() {
+        VkCommandBufferAllocateInfo cmd_alloc_info = {};
+        cmd_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        cmd_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmd_alloc_info.commandBufferCount = 1u;
+        cmd_alloc_info.commandPool = m_graphics_command_pool;
+
+        VkCommandBuffer command_buffer;
+        vkAllocateCommandBuffers(m_device, &cmd_alloc_info, &command_buffer);
+
+        VkCommandBufferBeginInfo cmd_begin_info = {};
+        cmd_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        cmd_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(command_buffer, &cmd_begin_info);
+
+        return command_buffer;
+    }
+
+    void VulkanDevice::end_single_command_buffer(VkCommandBuffer command) {
+        vkEndCommandBuffer(command);
+
+        VkSubmitInfo submit_info = {};
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.commandBufferCount = 1u;
+        submit_info.pCommandBuffers = &command;
+
+        vkQueueSubmit(m_graphcis_queue.queue_handler, 1u, &submit_info, VK_NULL_HANDLE);
+        vkQueueWaitIdle(m_graphcis_queue.queue_handler);
+
+        vkFreeCommandBuffers(m_device, m_graphics_command_pool, 1u, &command);
+    }
+
     std::shared_ptr<Buffer>
     VulkanDevice::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags property) {
         // TODO: add allocator class to manage memory
