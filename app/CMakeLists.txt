@@ -2,11 +2,15 @@ cmake_minimum_required(VERSION 3.25)
 
 
 set(GFX_HEADERS
+        ./include/Image.h
+        ./include/RenderPass.h
         ./include/SwapChain.h
         ./include/Buffer.h
         ./include/Queue.h
         ./include/VulkanDevice.h)
 set(GFX_SOURCES
+        ./src/Image.cpp
+        ./src/RenderPass.cpp
         ./src/SwapChain.cpp
         ./src/Buffer.cpp
         ./src/Queue.cpp
@@ -15,7 +19,7 @@ set(GFX_SOURCES
 set(APP_HEADERS
         ./include/RaycasterDemo.h
         ./include/Log.h
-        ./include/Window.h )
+        ./include/Window.h)
 set(APP_SRC
         ./src/RaycasterDemo.cpp
         ./src/Window.cpp

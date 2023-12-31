@@ -10,31 +10,39 @@
 #include <vector>
 
 
-namespace gfx
-{
+namespace gfx {
     class VulkanDevice;
+
+    class Image;
+
+    class RenderPass;
 
     struct SwapChainResource // TODO: change name; object represent the depth buffer and color buffer resource
     {
-        explicit SwapChainResource(VulkanDevice &device, VkExtent2D extent, uint32_t mip_level, VkSampleCountFlags num_samples, VkFormat _format, VkImageAspectFlagBits image_aspect, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
+        explicit SwapChainResource(VulkanDevice &device, VkExtent2D extent, uint32_t mip_level,
+                                   VkSampleCountFlagBits num_samples, VkFormat _format,
+                                   VkImageAspectFlagBits image_aspect, VkImageTiling tiling, VkImageUsageFlags usage,
+                                   VkMemoryPropertyFlags properties);
+
         ~SwapChainResource();
-        VkImage image;
-        VkImageView image_view;
-        VkDeviceMemory device_memory;
-        VkFormat format;
+
+        std::shared_ptr<Image> image;
     private:
         VulkanDevice &m_device;
     };
-    class SwapChain
-    {
+
+    class SwapChain {
     public:
-       explicit SwapChain(VulkanDevice &device);
-       ~SwapChain();
+        explicit SwapChain(VulkanDevice &device);
+
+        ~SwapChain();
+
         VkSwapchainKHR swapchain_handler() const { return m_swapchain; }
+
+        std::shared_ptr<RenderPass> renderpass_handler() const { return m_renderpass; }
 
     private:
         VulkanDevice &m_device;
-        VkRenderPass m_render_pass; // TODO: create
         VkSwapchainKHR m_swapchain;
         uint32_t m_image_count;
         VkFormat m_format;
@@ -42,7 +50,7 @@ namespace gfx
 
         std::unique_ptr<SwapChainResource> m_depth_buffer;
         std::unique_ptr<SwapChainResource> m_color_buffer;
-
+        std::shared_ptr<RenderPass> m_renderpass;
         VkSurfaceCapabilitiesKHR m_surface_capabilities;
         std::vector<VkSurfaceFormatKHR> m_supported_formats;
         std::vector<VkPresentModeKHR> m_supported_modes;

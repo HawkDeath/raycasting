@@ -7,20 +7,21 @@
 
 #include "Window.h"
 #include "VulkanDevice.h"
+#include "SwapChain.h"
 
-namespace ray
-{
-    class RaycasterDemo
-    {
+namespace ray {
+    class RaycasterDemo {
     public:
         RaycasterDemo() = default;
+
         ~RaycasterDemo() = default;
 
         void run();
 
     private:
-        Window m_window {"raycaster-demo", 1920u, 1080u};
+        Window m_window{"raycaster-demo", 1920u, 1080u};
         gfx::VulkanDevice m_vulkan_device{m_window};
+        gfx::SwapChain m_swap_chain{m_vulkan_device};
     };
 }
 

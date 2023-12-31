@@ -5,6 +5,7 @@
 #include "Log.h"
 
 #include "Buffer.h"
+#include "Image.h"
 
 #include <set>
 
@@ -171,6 +172,15 @@ namespace gfx {
     VulkanDevice::create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags property) {
         // TODO: add allocator class to manage memory
         return std::make_shared<Buffer>(*this, size, usage, property);
+    }
+
+    std::shared_ptr<Image>
+    VulkanDevice::create_image(VkExtent2D resolution, VkImageType type, VkImageAspectFlags aspect_flag,
+                               uint32_t mip_level, VkSampleCountFlagBits sample_count,
+                               VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                               VkMemoryPropertyFlags property) {
+        return std::make_shared<Image>(*this, resolution, type, aspect_flag, mip_level, sample_count, format, tiling,
+                                       usage, property);
     }
 
     uint32_t VulkanDevice::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags mem_prop) {

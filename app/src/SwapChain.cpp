@@ -3,29 +3,29 @@
 //
 #include "SwapChain.h"
 #include "VulkanDevice.h"
+#include "RenderPass.h"
 #include "Log.h"
+#include "Image.h"
 
 #include <array>
 // TODO:
-// add render pass class
-// implement SwapChainResource constructor !!!!!!!
 // add support for MSAA
 // implement finding depth buffer format
-// add image class
 
 namespace gfx {
 
     SwapChainResource::SwapChainResource(VulkanDevice &device, VkExtent2D extent, uint32_t mip_level,
-                                         VkSampleCountFlags num_samples, VkFormat _format,
+                                         VkSampleCountFlagBits num_samples, VkFormat _format,
                                          VkImageAspectFlagBits image_aspect, VkImageTiling tiling,
                                          VkImageUsageFlags usage, VkMemoryPropertyFlags properties) : m_device{device} {
+
+        image = m_device.create_image(extent, VK_IMAGE_TYPE_2D, image_aspect, mip_level, num_samples, _format, tiling,
+                                      usage, properties);
 
     }
 
     SwapChainResource::~SwapChainResource() {
-        vkDestroyImageView(m_device.device_handler(), image_view, nullptr);
-        vkDestroyImage(m_device.device_handler(), image, nullptr);
-        vkFreeMemory(m_device.device_handler(), device_memory, nullptr);
+        image.reset();
     }
 
     SwapChain::SwapChain(gfx::VulkanDevice &device) : m_device{device}, m_image_count{0u}, m_depth_buffer{nullptr},
@@ -100,6 +100,7 @@ namespace gfx {
 
         VK_CHECK(vkCreateSwapchainKHR(m_device.device_handler(), &swapchain_create_info, nullptr, &m_swapchain),
                  "Failed to create swapchain");
+        LOG("Swapchain has been created");
 
         vkGetSwapchainImagesKHR(m_device.device_handler(), m_swapchain, &m_image_count, nullptr);
         m_swapchain_images.resize(m_image_count);
@@ -140,28 +141,33 @@ namespace gfx {
                                                              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+        m_renderpass = std::make_shared<RenderPass>(m_device, m_format, m_color_buffer->image->format(),
+                                                    m_depth_buffer->image->format());
+
         // create framebuffers
         m_framebuffers.resize(m_swapchain_image_views.size());
-        for (uint32_t i = 0u; i < m_framebuffers.size(); ++i)
-        {
+        for (uint32_t i = 0u; i < m_framebuffers.size(); ++i) {
             std::array<VkImageView, 3> attachments = {
-                    m_color_buffer->image_view,
-                    m_depth_buffer->image_view,
+                    m_color_buffer->image->image_view_handler(),
+                    m_depth_buffer->image->image_view_handler(),
                     m_swapchain_image_views[i]
             };
 
             VkFramebufferCreateInfo framebuffer_create_info = {};
             framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             framebuffer_create_info.pNext = VK_NULL_HANDLE;
-            framebuffer_create_info.renderPass = m_render_pass;
+            framebuffer_create_info.renderPass = m_renderpass->renderpass_handler();
             framebuffer_create_info.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebuffer_create_info.pAttachments = attachments.data();
             framebuffer_create_info.width = m_extent.width;
             framebuffer_create_info.height = m_extent.height;
             framebuffer_create_info.layers = 1u;
 
-            VK_CHECK(vkCreateFramebuffer(m_device.device_handler(), &framebuffer_create_info, nullptr, &m_framebuffers[i]), "Failed to create framebuffer");
+            VK_CHECK(vkCreateFramebuffer(m_device.device_handler(), &framebuffer_create_info, nullptr,
+                                         &m_framebuffers[i]), "Failed to create framebuffer");
         }
+        LOG("Framebuffer has been created. No. of frames {}", m_framebuffers.size());
+
     }
 
     SwapChain::~SwapChain() {
