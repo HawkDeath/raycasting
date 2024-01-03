@@ -27,7 +27,7 @@ namespace gfx {
     }
 
     SwapChain::SwapChain(gfx::VulkanDevice &device) : m_device{device}, m_image_count{0u}, m_depth_buffer{nullptr},
-                                                      m_color_buffer{nullptr}, m_current_frame{0u} {
+                                                      m_current_frame{0u} {
         init();
     }
 
@@ -47,7 +47,6 @@ namespace gfx {
         }
 
         m_depth_buffer.reset();
-        m_color_buffer.reset();
 
         for (auto framebuffer: m_framebuffers) {
             vkDestroyFramebuffer(m_device.device_handler(), framebuffer, nullptr);
@@ -76,9 +75,9 @@ namespace gfx {
 
     void SwapChain::submit(const VkCommandBuffer *cmd, uint32_t *image_idx) {
 
-        if (m_images_in_flight[*image_idx] != VK_NULL_HANDLE)
-        {
-            vkWaitForFences(m_device.device_handler(), 1u, &m_images_in_flight[*image_idx], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        if (m_images_in_flight[*image_idx] != VK_NULL_HANDLE) {
+            vkWaitForFences(m_device.device_handler(), 1u, &m_images_in_flight[*image_idx], VK_TRUE,
+                            std::numeric_limits<uint64_t>::max());
         }
         m_images_in_flight[*image_idx] = m_in_flight_fences[m_current_frame];
 
@@ -125,7 +124,7 @@ namespace gfx {
     }
 
     bool SwapChain::compare_swap_formats(const gfx::SwapChain &swapchain) const {
-        return ((swapchain.m_color_buffer->image->format() == m_color_buffer->image->format()) &&
+        return ((swapchain.m_format == m_format) &&
                 (swapchain.m_depth_buffer->image->format() == swapchain.m_depth_buffer->image->format()));
     }
 
@@ -198,7 +197,8 @@ namespace gfx {
         swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         swapchain_create_info.clipped = VK_TRUE;
 
-        swapchain_create_info.oldSwapchain = m_old_swap_chain == nullptr ? VK_NULL_HANDLE : m_old_swap_chain->m_swapchain;
+        swapchain_create_info.oldSwapchain =
+                m_old_swap_chain == nullptr ? VK_NULL_HANDLE : m_old_swap_chain->m_swapchain;
 
         VK_CHECK(vkCreateSwapchainKHR(m_device.device_handler(), &swapchain_create_info, nullptr, &m_swapchain),
                  "Failed to create swapchain");
@@ -229,12 +229,6 @@ namespace gfx {
                                        &m_swapchain_image_views[i]), "Failed to create swapchain image view");
         }
 
-        // create color buffer
-        m_color_buffer = std::make_unique<SwapChainResource>(m_device, m_extent, 1u, VK_SAMPLE_COUNT_1_BIT, m_format,
-                                                             VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_TILING_OPTIMAL,
-                                                             VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-                                                             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                                                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         // create depth buffer
         m_depth_buffer = std::make_unique<SwapChainResource>(m_device, m_extent, 1u, VK_SAMPLE_COUNT_1_BIT,
@@ -243,7 +237,7 @@ namespace gfx {
                                                              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        m_renderpass = std::make_shared<RenderPass>(m_device, m_format, m_color_buffer->image->format(),
+        m_renderpass = std::make_shared<RenderPass>(m_device, m_format,
                                                     m_depth_buffer->image->format());
 
         // create framebuffers

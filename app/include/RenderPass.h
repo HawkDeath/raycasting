@@ -7,15 +7,17 @@
 
 #include <vulkan/vulkan.h>
 
-namespace gfx
-{
+namespace gfx {
     class VulkanDevice;
-    class RenderPass
-    {
+
+    class RenderPass {
     public:
-        explicit RenderPass(VulkanDevice &device, VkFormat swapchain_format, VkFormat color_format, VkFormat depth_format);
+        explicit RenderPass(VulkanDevice &device, VkFormat swapchain_format, VkFormat depth_format);
+
         ~RenderPass();
+
         VkRenderPass renderpass_handler() const { return m_renderpass; }
+
     private:
         VulkanDevice &m_device;
         VkRenderPass m_renderpass;

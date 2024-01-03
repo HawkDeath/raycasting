@@ -65,7 +65,6 @@ namespace gfx {
         VkExtent2D m_extent;
 
         std::unique_ptr<SwapChainResource> m_depth_buffer;
-        std::unique_ptr<SwapChainResource> m_color_buffer;
         std::shared_ptr<RenderPass> m_renderpass;
         VkSurfaceCapabilitiesKHR m_surface_capabilities;
         std::vector<VkSurfaceFormatKHR> m_supported_formats;
