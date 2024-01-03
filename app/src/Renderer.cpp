@@ -106,7 +106,7 @@ namespace gfx {
         render_pass_begin_info.renderArea.extent = m_device.window_handler().get_window_extent();
 
         std::array<VkClearValue, 2> clear_values = {};
-        clear_values[0].color = {1.0f, 0.234f, 0.65f, 1.0f};
+        clear_values[0].color = {0.6540f, 0.7f, 0.55f, 1.0f};
         clear_values[1].depthStencil = {1.0f, 0};
 
         render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());

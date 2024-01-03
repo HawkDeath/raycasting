@@ -249,10 +249,10 @@ namespace gfx {
         // create framebuffers
         m_framebuffers.resize(m_swapchain_image_views.size());
         for (uint32_t i = 0u; i < m_framebuffers.size(); ++i) {
-            std::array<VkImageView, 3> attachments = {
-                    m_color_buffer->image->image_view_handler(),
-                    m_depth_buffer->image->image_view_handler(),
-                    m_swapchain_image_views[i]
+            std::array<VkImageView, 2> attachments = {
+                    m_swapchain_image_views[i],
+                    m_depth_buffer->image->image_view_handler()
+
             };
 
             VkFramebufferCreateInfo framebuffer_create_info = {};

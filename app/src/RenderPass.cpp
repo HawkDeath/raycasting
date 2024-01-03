@@ -72,8 +72,8 @@ namespace gfx {
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-        std::array<VkAttachmentDescription, 3> attachments = {color_attachment, depth_attachment,
-                                                              color_attachment_resolve};
+        std::array<VkAttachmentDescription, 2> attachments = {color_attachment, depth_attachment};
+                                                            //  color_attachment_resolve};
         VkRenderPassCreateInfo renderpass_create_info = {};
         renderpass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderpass_create_info.pNext = VK_NULL_HANDLE;

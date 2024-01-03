@@ -70,6 +70,7 @@ namespace gfx {
         VkSurfaceCapabilitiesKHR m_surface_capabilities;
         std::vector<VkSurfaceFormatKHR> m_supported_formats;
         std::vector<VkPresentModeKHR> m_supported_modes;
+
         std::vector<VkImage> m_swapchain_images;
         std::vector<VkImageView> m_swapchain_image_views;
         std::vector<VkFramebuffer> m_framebuffers;
