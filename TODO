@@ -1,0 +1,14 @@
+TODO_list:
+> add pipeline config
+> add pipeline class
+> add graphics pipeline class
+> add compute pipeline class
+> refactor buffer class
+> refactor image class and add support for 1D and 3D textures; split VkImage, VkImageView and raw image data
+> add descriptor builder class
+> online shader compiler
+> add support for MSAA
+> implement finding depth buffer format
+> add triangle demo
+> add VMA
+> add custom allocator
