@@ -51,6 +51,10 @@ namespace gfx {
 
         ray::Window &window_handler() const { return m_window; }
 
+        void waitQueueIdle() const {
+            vkQueueWaitIdle(graphics_queue_handler().queue_handler);
+        }
+
     private:
         ray::Window &m_window;
         VkInstance m_instance;

@@ -8,9 +8,7 @@
 #include "Image.h"
 
 #include <array>
-// TODO:
-// add support for MSAA
-// implement finding depth buffer format
+#include <limits>
 
 namespace gfx {
 
@@ -29,7 +27,109 @@ namespace gfx {
     }
 
     SwapChain::SwapChain(gfx::VulkanDevice &device) : m_device{device}, m_image_count{0u}, m_depth_buffer{nullptr},
-                                                      m_color_buffer{nullptr} {
+                                                      m_color_buffer{nullptr}, m_current_frame{0u} {
+        init();
+    }
+
+    SwapChain::SwapChain(VulkanDevice &device, std::shared_ptr<gfx::SwapChain> old_swap_chain) : m_device{device},
+                                                                                                 m_old_swap_chain{
+                                                                                                         old_swap_chain} {
+        init();
+        m_old_swap_chain = nullptr;
+    }
+
+    SwapChain::~SwapChain() {
+
+        for (uint32_t i = 0u; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            vkDestroyFence(m_device.device_handler(), m_in_flight_fences[i], nullptr);
+            vkDestroySemaphore(m_device.device_handler(), m_render_finished_semaphores[i], nullptr);
+            vkDestroySemaphore(m_device.device_handler(), m_image_available_semaphores[i], nullptr);
+        }
+
+        m_depth_buffer.reset();
+        m_color_buffer.reset();
+
+        for (auto framebuffer: m_framebuffers) {
+            vkDestroyFramebuffer(m_device.device_handler(), framebuffer, nullptr);
+        }
+
+        for (auto img_view: m_swapchain_image_views) {
+            vkDestroyImageView(m_device.device_handler(), img_view, nullptr);
+        }
+        vkDestroySwapchainKHR(m_device.device_handler(), m_swapchain, nullptr);
+    }
+
+    VkResult SwapChain::acquireNextImage(uint32_t *image_idx) {
+        vkWaitForFences(m_device.device_handler(), 1u, &m_in_flight_fences[m_current_frame], VK_TRUE,
+                        std::numeric_limits<uint64_t>::max());
+        VkResult res = vkAcquireNextImageKHR(m_device.device_handler(), m_swapchain,
+                                             std::numeric_limits<uint64_t>::max(),
+                                             m_image_available_semaphores[m_current_frame], VK_NULL_HANDLE,
+                                             image_idx);
+        if (res == VK_ERROR_OUT_OF_DATE_KHR ||
+            (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR)) // TODO: handle resize - VK_ERROR_OUT_OF_DATE_KHR event
+        {
+            RT_THROW("Failed to acquire swap chain image");
+        }
+        return res;
+    }
+
+    void SwapChain::submit(const VkCommandBuffer *cmd, uint32_t *image_idx) {
+
+        if (m_images_in_flight[*image_idx] != VK_NULL_HANDLE)
+        {
+            vkWaitForFences(m_device.device_handler(), 1u, &m_images_in_flight[*image_idx], VK_TRUE, std::numeric_limits<uint64_t>::max());
+        }
+        m_images_in_flight[*image_idx] = m_in_flight_fences[m_current_frame];
+
+        VkSubmitInfo submit_info = {};
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pNext = VK_NULL_HANDLE;
+
+        VkSemaphore wait_samphores[] = {m_image_available_semaphores[m_current_frame]};
+        VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT};
+
+        submit_info.waitSemaphoreCount = 1u;
+        submit_info.pWaitSemaphores = wait_samphores;
+        submit_info.pWaitDstStageMask = wait_stages;
+
+        submit_info.commandBufferCount = 1u;
+        submit_info.pCommandBuffers = cmd;
+
+        VkSemaphore signal_semaphores[] = {m_render_finished_semaphores[m_current_frame]};
+        submit_info.signalSemaphoreCount = 1u;
+        submit_info.pSignalSemaphores = signal_semaphores;
+
+        vkResetFences(m_device.device_handler(), 1u, &m_in_flight_fences[m_current_frame]);
+        VK_CHECK(vkQueueSubmit(m_device.graphics_queue_handler().queue_handler, 1u, &submit_info,
+                               m_in_flight_fences[m_current_frame]), "Failed to submit draw cmd buffer");
+        // present frame on screen
+
+        VkPresentInfoKHR present_info = {};
+        present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present_info.pNext = VK_NULL_HANDLE;
+
+        present_info.waitSemaphoreCount = 1u;
+        present_info.pWaitSemaphores = signal_semaphores;
+
+        VkSwapchainKHR swapchains[] = {m_swapchain};
+        present_info.swapchainCount = 1u;
+        present_info.pSwapchains = swapchains;
+
+        present_info.pImageIndices = image_idx;
+
+        vkQueuePresentKHR(m_device.present_queue_handler().queue_handler, &present_info);
+        // TODO: handle errors and resize
+
+        m_current_frame = (m_current_frame + 1u) % MAX_FRAMES_IN_FLIGHT;
+    }
+
+    bool SwapChain::compare_swap_formats(const gfx::SwapChain &swapchain) const {
+        return ((swapchain.m_color_buffer->image->format() == m_color_buffer->image->format()) &&
+                (swapchain.m_depth_buffer->image->format() == swapchain.m_depth_buffer->image->format()));
+    }
+
+    void SwapChain::init() {
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_device.physical_device_handler(), m_device.surface_handler(),
                                                   &m_surface_capabilities);
         uint32_t format_counts = 0u;
@@ -97,6 +197,8 @@ namespace gfx {
         swapchain_create_info.preTransform = m_surface_capabilities.currentTransform;
         swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         swapchain_create_info.clipped = VK_TRUE;
+
+        swapchain_create_info.oldSwapchain = m_old_swap_chain == nullptr ? VK_NULL_HANDLE : m_old_swap_chain->m_swapchain;
 
         VK_CHECK(vkCreateSwapchainKHR(m_device.device_handler(), &swapchain_create_info, nullptr, &m_swapchain),
                  "Failed to create swapchain");
@@ -168,20 +270,34 @@ namespace gfx {
         }
         LOG("Framebuffer has been created. No. of frames {}", m_framebuffers.size());
 
+
+        m_image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        m_render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        m_in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+        m_images_in_flight.resize(m_image_count, VK_NULL_HANDLE);
+
+        VkSemaphoreCreateInfo semaphore_create_info = {};
+        semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        semaphore_create_info.pNext = VK_NULL_HANDLE;
+
+        VkFenceCreateInfo fence_create_info = {};
+        fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fence_create_info.pNext = VK_NULL_HANDLE;
+        fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        for (uint32_t i = 0u; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            VK_CHECK(vkCreateSemaphore(m_device.device_handler(), &semaphore_create_info, nullptr,
+                                       &m_render_finished_semaphores[i]), "Failed to create render semaphore");
+        }
+        for (uint32_t i = 0u; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            VK_CHECK(vkCreateSemaphore(m_device.device_handler(), &semaphore_create_info, nullptr,
+                                       &m_image_available_semaphores[i]), "Failed to create image semaphore");
+        }
+        for (uint32_t i = 0u; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            VK_CHECK(vkCreateFence(m_device.device_handler(), &fence_create_info, nullptr, &m_in_flight_fences[i]),
+                     "Failed to fence");
+        }
     }
 
-    SwapChain::~SwapChain() {
 
-        m_depth_buffer.reset();
-        m_color_buffer.reset();
-
-        for (auto framebuffer: m_framebuffers) {
-            vkDestroyFramebuffer(m_device.device_handler(), framebuffer, nullptr);
-        }
-
-        for (auto img_view: m_swapchain_image_views) {
-            vkDestroyImageView(m_device.device_handler(), img_view, nullptr);
-        }
-        vkDestroySwapchainKHR(m_device.device_handler(), m_swapchain, nullptr);
-    }
 }

@@ -11,6 +11,7 @@ namespace ray
         glfwSetErrorCallback([](int code, const char *desc) -> void {ELOG("[GLFW_error] {}, {}]", code, desc);});
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         window_handler = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height), _title.c_str(), nullptr, nullptr);
         if (window_handler == nullptr)
             RT_THROW("Failed to create window");

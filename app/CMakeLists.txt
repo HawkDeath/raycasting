@@ -2,13 +2,16 @@ cmake_minimum_required(VERSION 3.25)
 
 
 set(GFX_HEADERS
+        ./include/Renderer.h
         ./include/Image.h
         ./include/RenderPass.h
         ./include/SwapChain.h
         ./include/Buffer.h
         ./include/Queue.h
         ./include/VulkanDevice.h)
+
 set(GFX_SOURCES
+        ./src/Renderer.cpp
         ./src/Image.cpp
         ./src/RenderPass.cpp
         ./src/SwapChain.cpp

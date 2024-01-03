@@ -20,7 +20,8 @@ namespace ray
         explicit Window(const std::string &_title, const uint32_t &_width, const uint32_t &_height);
         ~Window();
 
-        [[nodiscard]]  bool is_running() noexcept { return !glfwWindowShouldClose(window_handler); }
+        [[nodiscard]]  bool is_running() const noexcept { return !glfwWindowShouldClose(window_handler); }
+        inline void process_inputs() const noexcept { glfwPollEvents(); }
 
         [[nodiscard]] VkExtent2D get_window_extent() const { return {width, height};}
 
