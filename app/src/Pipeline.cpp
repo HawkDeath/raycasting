@@ -123,7 +123,26 @@ namespace gfx {
         graphics_pipeline_info.subpass = 0u;
         graphics_pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 
-        VK_CHECK(vkCreateGraphicsPipelines(m_device.device_handler(), m_pipeline_cache, 1u, &graphics_pipeline_info, nullptr, &m_pipeline), "Failed to create graphics pipeline");
+        VK_CHECK(vkCreateGraphicsPipelines(m_device.device_handler(), m_pipeline_cache, 1u, &graphics_pipeline_info,
+                                           nullptr, &m_pipeline), "Failed to create graphics pipeline");
+
+    }
+
+    ComputePipeline::ComputePipeline(VulkanDevice &device, PipelineConfig config, RenderPass &render_pass,
+                                     VkDescriptorSetLayout descriptor_set_layout) : Pipeline(device,
+                                                                                             std::move(config),
+                                                                                             descriptor_set_layout) {
+        if (m_pipeline_config.shaders_stage.empty()) { RT_THROW("ERROR!!!: Compute shader required compute shader."); }
+
+        VkComputePipelineCreateInfo compute_pipeline_info = {};
+        compute_pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        compute_pipeline_info.pNext = VK_NULL_HANDLE;
+        compute_pipeline_info.layout = m_pipeline_layout;
+        compute_pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+        compute_pipeline_info.stage = m_pipeline_config.shaders_stage[0];
+
+        VK_CHECK(vkCreateComputePipelines(m_device.device_handler(), m_pipeline_cache, 1u, &compute_pipeline_info,
+                                          nullptr, &m_pipeline), "Failed to create compute pipeline");
 
     }
 

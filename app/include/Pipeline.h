@@ -55,6 +55,13 @@ namespace gfx {
         virtual ~GraphicsPipeline() = default;
     };
 
+    class ComputePipeline : public Pipeline
+    {
+    public:
+        explicit ComputePipeline(VulkanDevice &device, PipelineConfig config, RenderPass &render_pass, VkDescriptorSetLayout descriptor_set_layout);
+        virtual ~ComputePipeline() = default;
+    };
+
 }
 
 #endif //RAYCASTING_PIPELINE_H
