@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 
 set(GFX_HEADERS
+        ./include/Pipeline.h
         ./include/Renderer.h
         ./include/Image.h
         ./include/RenderPass.h
@@ -11,6 +12,7 @@ set(GFX_HEADERS
         ./include/VulkanDevice.h)
 
 set(GFX_SOURCES
+        ./src/Pipeline.cpp
         ./src/Renderer.cpp
         ./src/Image.cpp
         ./src/RenderPass.cpp
